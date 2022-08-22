@@ -18,13 +18,13 @@ Decrypted Data:                                                        0f001c712
 ## Abkürzungen:
 ```
 head: 
-lä: 
+lä: Nachrichtenlänge in Bytes
 cl:
 glo: 
-ln: 
-en: 
-fraCnt: 
-crc: 
-eb: 
+ln: Länge der Daten (en+fraCnt+encr Data) in Bytes
+en: Encryption Byte
+fraCnt: Frame Counter
+crc: Checksum
+eb: End Byte
 ++: anonymisierte Bytes
 ```
