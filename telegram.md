@@ -16,7 +16,7 @@ Decrypted Data:                                                         0f001c71
 
 Daten prefix:
 09xx string mit xx Bytes
-06 number mit 8 Bytes
+06 number mit 4 Bytes
 ```
 
 ## Abkürzungen:
