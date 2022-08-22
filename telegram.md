@@ -13,6 +13,10 @@ Decrypted Data:                                                         0f001c71
 ```
    fraCnt      timestamp                          0.6.25.9.0.255      ZaehlerNr                       time          Date          Z P+        Z P-        Z Q+        Z Q-        V P+        V P-     infT infC
 0f 001c7123 0c 07e606070215100700ff8880 020c 0906 0006190900ff   090d 31313+++++++++++++++313538 0904 15100700 0905 07e6060702 06 01ee970f 06 00000000 06 00bc9bcd 06 000a6963 06 000001b1 06 00000000 0900 0900 
+
+Daten prefix:
+09xx string mit xx Bytes
+06 number mit 8 Bytes
 ```
 
 ## Abkürzungen:
