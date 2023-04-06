@@ -1,242 +1,147 @@
 [
-  {
-    "id": "bb3ef024.5bd2f8",
-    "type": "tab",
-    "label": "Smartmeter KNG",
-    "disabled": false,
-    "info": ""
-  },
-  {
-    "id": "88c75467.490618",
-    "type": "comment",
-    "z": "bb3ef024.5bd2f8",
-    "name": "",
-    "info": "\nSecurity: Cosem Suite 0; High Level Security (HLS); AES 128\n\n",
-    "x": 180,
-    "y": 100,
-    "wires": []
-  },
-  {
-    "id": "c49dee66.31ad08",
-    "type": "serial in",
-    "z": "bb3ef024.5bd2f8",
-    "name": "",
-    "serial": "28bd9ed7.d1868a",
-    "x": 130,
-    "y": 160,
-    "wires": [
-      [
-        "e9706246.ffbb"
-      ]
-    ]
-  },
-  {
-    "id": "8c114807.3f7f4",
-    "type": "function",
-    "z": "bb3ef024.5bd2f8",
-    "name": "toHex",
-    "func": "\n//msg.payload = toHexString(msg.payload);\n\nreturn msg;\n\nfunction toHexString(byteArray) {\n  return Array.from(byteArray, function(byte) {\n    return ('0' + (byte & 0xFF).toString(16)).slice(-2);\n  }).join('')\n}\n",
-    "outputs": 1,
-    "noerr": 0,
-    "x": 410,
-    "y": 4360,
-    "wires": [
-      [
-        "57c65975.8ddee"
-      ]
-    ]
-  },
-  {
-    "id": "dcc0245b.c29ec8",
-    "type": "serial in",
-    "z": "bb3ef024.5bd2f8",
-    "name": "",
-    "serial": "28bd9ed7.d1868a",
-    "x": 130,
-    "y": 4320,
-    "wires": [
-      [
-        "8c114807.3f7f4"
-      ]
-    ]
-  },
-  {
-    "id": "57c65975.8ddee",
-    "type": "debug",
-    "z": "bb3ef024.5bd2f8",
-    "name": "",
-    "active": false,
-    "tosidebar": true,
-    "console": false,
-    "tostatus": false,
-    "complete": "false",
-    "x": 720,
-    "y": 4420,
-    "wires": []
-  },
-  {
-    "id": "70ed835a.2e475c",
-    "type": "function",
-    "z": "bb3ef024.5bd2f8",
-    "name": "split",
-    "func": "\n// Config:\nlet secondsPerFrame = 1;\nlet key = '<Per mail von KNG>';\n\n// code\nlet payload = toHexString(msg.payload);\nlet message = splitLvl1(payload);\nlet data = splitLvl2(message.data);\n\nmsg.payload = {\n    key: key,\n    systemTitle: message.systemTitle,\n    frameCounter: data.frameCounter,\n    securityByte: data.securityByte,\n    dataEnc: data.encrypted,\n    dataDec: null,\n    obis: null,\n    \n    // debug info\n    frameZero: new Date(Date.now() - hex2Dec(data.frameCounter) * secondsPerFrame * 1000),\n    completeMessage: payload,\n    message: message,\n    data: data\n};\n\nreturn msg;\n\n// --------------------------------------\n\n/**\n * @param int[] byteArray\n * \n * @return string\n */\nfunction toHexString(byteArray) {\n  return Array.from(\n        byteArray,\n        function(byte) {\n            return ('0' + (byte & 0xFF).toString(16)).slice(-2);\n        }\n    ).join('');\n}\n\n/**\n *\n */\nfunction splitLvl1(message) {\n    let startByte = message.indexOf('db');\n    let titleLenStart = startByte + 2;\n\n    let titleStart = titleLenStart + 2;\n    let sysTitleLen = hex2Dec(message.slice(titleLenStart, titleStart));\n    let titleEnd = titleStart + sysTitleLen * 2;\n\n    let lengCountEnd = titleEnd + 2\n    let dataLength = hex2Dec(message.slice(titleEnd, lengCountEnd));\n    let endMessage = lengCountEnd + dataLength * 2;\n    let endChecksum = endMessage + 4;\n\n    return {\n        systemTitle: message.slice(titleStart, titleEnd),\n        data: message.slice(lengCountEnd, endMessage),\n        checksum: message.slice(endMessage, endChecksum)\n    };\n}\n\n/**\n *\n */\nfunction splitLvl2(message) {\n    let messageLength = message.length;\n\n    let frameCountStart = 2;\n    let frameCountEnd = frameCountStart + 8;\n    let tagStart = messageLength - 24;\n    \n    return {\n        securityByte: message.slice(0, frameCountStart),\n        frameCounter: message.slice(frameCountStart, frameCountEnd),\n        encrypted: message.slice(frameCountEnd, messageLength),\n    };\n}\n\n/**\n *\n */\nfunction hex2Dec(n) {\n    return parseInt(n, 16).toString(10)\n}\n",
-    "outputs": 1,
-    "noerr": 0,
-    "initialize": "",
-    "finalize": "",
-    "libs": [],
-    "x": 290,
-    "y": 220,
-    "wires": [
-      [
-        "2de624af.9bf0cc",
-        "21f2b34e.53514c"
-      ]
-    ]
-  },
-  {
-    "id": "49cf029a.bb799c",
-    "type": "exec",
-    "z": "bb3ef024.5bd2f8",
-    "command": "",
-    "addpay": "payload",
-    "append": "",
-    "useSpawn": "false",
-    "timer": "",
-    "oldrc": false,
-    "name": "",
-    "x": 450,
-    "y": 300,
-    "wires": [
-      [
-        "261b8211.f45bb6"
-      ],
-      [],
-      []
-    ]
-  },
-  {
-    "id": "21f2b34e.53514c",
-    "type": "function",
-    "z": "bb3ef024.5bd2f8",
-    "name": "prepare exec",
-    "func": "msg.original = msg.payload;\n\nmsg.payload = 'python dlmsDecrypt/main.py'\n+ ' -k ' + msg.payload.key\n+ ' -t ' + msg.payload.systemTitle\n+ ' -b ' + msg.payload.securityByte\n+ ' -f ' + msg.payload.frameCounter\n+ ' -d ' + msg.payload.dataEnc;\n\nreturn msg;",
-    "outputs": 1,
-    "noerr": 0,
-    "initialize": "",
-    "finalize": "",
-    "libs": [],
-    "x": 290,
-    "y": 300,
-    "wires": [
-      [
-        "49cf029a.bb799c"
-      ]
-    ]
-  },
-  {
-    "id": "2de624af.9bf0cc",
-    "type": "debug",
-    "z": "bb3ef024.5bd2f8",
-    "name": "",
-    "active": false,
-    "tosidebar": true,
-    "console": false,
-    "tostatus": false,
-    "complete": "false",
-    "statusVal": "",
-    "statusType": "auto",
-    "x": 490,
-    "y": 220,
-    "wires": []
-  },
-  {
-    "id": "e577518d.79a018",
-    "type": "debug",
-    "z": "bb3ef024.5bd2f8",
-    "name": "",
-    "active": false,
-    "tosidebar": true,
-    "console": false,
-    "tostatus": false,
-    "complete": "payload",
-    "targetType": "msg",
-    "statusVal": "",
-    "statusType": "auto",
-    "x": 570,
-    "y": 380,
-    "wires": []
-  },
-  {
-    "id": "261b8211.f45bb6",
-    "type": "function",
-    "z": "bb3ef024.5bd2f8",
-    "name": "merge",
-    "func": "\nif(msg.payload) {\n    msg.original.dataDec = msg.payload;\n    msg.payload = msg.original;\n    \n    return msg;\n}\n",
-    "outputs": 1,
-    "noerr": 0,
-    "initialize": "",
-    "finalize": "",
-    "libs": [],
-    "x": 610,
-    "y": 300,
-    "wires": [
-      [
-        "cd2f6010.c82228"
-      ]
-    ]
-  },
-  {
-    "id": "cd2f6010.c82228",
-    "type": "function",
-    "z": "bb3ef024.5bd2f8",
-    "name": "split Decrypted",
-    "func": "\nmsg.payload.obis = getObisMessage(msg.payload.dataDec);\n\nreturn msg;\n\nfunction getObisMessage(message){\n    let startZPIn = 114;\n    let startZPOut = startZPIn + 10;\n    let startZQIn = startZPOut + 10;\n    let startZQOut = startZQIn + 10;\n    let startCPIn = startZQOut + 10;\n    let startCPOut = startCPIn + 10;\n\n    return {\n        zaehlPIn: hex2Dec(message.slice(startZPIn, startZPIn + 8)),\n        zaehlPOut: hex2Dec(message.slice(startZPOut, startZPOut + 8)),\n        zaehlQIn: hex2Dec(message.slice(startZQIn, startZQIn + 8)),\n        zaehlQOut: hex2Dec(message.slice(startZQOut, startZQOut + 8)),\n        consPIn: hex2Dec(message.slice(startCPIn, startCPIn + 8)),\n        consPOut: hex2Dec(message.slice(startCPOut, startCPOut + 8))\n    };\n}\n\n/**\n *\n */\nfunction hex2Dec(n) {\n    return parseInt(n, 16).toString(10)\n}",
-    "outputs": 1,
-    "noerr": 0,
-    "initialize": "",
-    "finalize": "",
-    "libs": [],
-    "x": 320,
-    "y": 380,
-    "wires": [
-      [
-        "e577518d.79a018"
-      ]
-    ]
-  },
-  {
-    "id": "e9706246.ffbb",
-    "type": "function",
-    "z": "bb3ef024.5bd2f8",
-    "name": "filterShort",
-    "func": "if(msg.payload.length > 100){\n    return msg;\n}\n",
-    "outputs": 1,
-    "noerr": 0,
-    "initialize": "",
-    "finalize": "",
-    "libs": [],
-    "x": 300,
-    "y": 160,
-    "wires": [
-      [
-        "70ed835a.2e475c"
-      ]
-    ]
-  },
-  {
-    "id": "28bd9ed7.d1868a",
-    "type": "serial-port",
-    "serialport": "/dev/ttyUSB0",
-    "serialbaud": "115200",
-    "databits": "8",
-    "parity": "none",
-    "stopbits": "1",
-    "waitfor": "",
-    "newline": "500",
-    "bin": "bin",
-    "out": "interbyte",
-    "addchar": "",
-    "responsetimeout": "10000"
-  }
+    {
+        "id": "c9682c898568ccb1",
+        "type": "debug",
+        "z": "d52ecd696b4150a3",
+        "name": "",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "x": 670,
+        "y": 320,
+        "wires": []
+    },
+    {
+        "id": "a88ab3350bea28e6",
+        "type": "function",
+        "z": "d52ecd696b4150a3",
+        "name": "DecodeObis",
+        "func": "\n// extract obis data\nmsg.payload.obis = decodeData(msg.payload.dataDecrypted, msg.payload.config.obisCodes);\n\nreturn msg;\n\n// --------------- code -------------------\n\n/**\n *\n */\nfunction decodeData(hexString, obisCodes) {\n  const decoded = {};\n  let index = 40;\n  let valueKey = 0;\n  while ((index+1) < hexString.length) {\n    let length = getDataIntervalForType(\n        hexString.substr(index, 2),\n        hexString.substr(index + 2, 2));\n    if(!length) {\n        node.status({\n        fill: \"red\", \n        shape: \"ring\",\n        text: 'No length for idx:'+index+' of length '+hexString.length\n    });\n        \n        return decoded;\n    }\n\n    let valueStart = index + length.start * 2;\n    let valueLength =  length.end * 2;\n    index += length.start * 2 + valueLength;\n    \n    let value = hexString.substr(valueStart, valueLength);\n    \n\n    let object = obisCodes[valueKey];\n    object.type = length.type;\n    object.value = value;\n\n    processValue(object);\n    \n    decoded[obisCodes[valueKey].key] = object;\n    valueKey++\n  }\n  \n   node.status({\n        fill: \"green\", \n        shape: \"ring\",\n        text: 'decoded'\n       \n   });\n        \n  return decoded;\n}\n\n/**\n * Get the length of the value(excluded the start bytes)\n *\n */\nfunction getDataIntervalForType(type, next) {\n    type = parseInt(type, 16);\n    \n    if(type === 9) {\n        return {type: 'string', start: 2, end: parseInt(next, 16)};\n    }\n    \n    if(type === 6) {\n        return {type: 'int', start:1, end: 4};\n    }\n    \n    return null;\n}\n\n/**\n *\n */\nfunction processValue(object) {\n  if (object.obis === 'init') {\n    // init\n    object.value = object.value.match(/.{1,2}/g).map(byte => parseInt(byte, 16)).join('.');\n\n    return;\n  }\n\n  if (object.obis === '1-0:0.9.1') {\n    // time\n    object.value = object.value.match(/.{1,2}/g).map(byte => parseInt(byte, 16)).join(':');\n\n    return;\n  }\n\n  if (object.obis === '1-0:0.9.2') {\n    // date\n    let value = object.value.match(/.{1,2}/g);\n    object.value = parseInt(value[0].concat(value[1]),16) + '-' + parseInt(value[2],16) + '-' \n    + parseInt(value[3],16) +'_' + parseInt(value[4],16);\n\n    return;\n  }\n\n  if (object.type === 'int') {\n    object.value = parseInt(object.value, 16);\n\n    return;\n  }\n\n  if (object.type === 'string' && object.value) {\n    // Byte-String in Uint8Array konvertieren\n    const byteArray = new Uint8Array(object.value.match(/.{1,2}/g).map(byte => parseInt(byte, 16)));\n    // Uint8Array in Unicode-String konvertieren\n    object.value = String.fromCharCode(...byteArray);\n\n    return;\n  }\n}\n",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 370,
+        "y": 320,
+        "wires": [
+            [
+                "c9682c898568ccb1"
+            ]
+        ]
+    },
+    {
+        "id": "b939a13416ab2353",
+        "type": "function",
+        "z": "d52ecd696b4150a3",
+        "name": "split",
+        "func": "\n// Config:\nlet secondsPerFrame = 1;\n\nlet key = '<beim netzbetreiber anfragen>';\n\nlet obisCodes = [\n    { key: 'none', obis: \"init\", description: \"\", unit: '' },\n    { key: 'counterNr', obis: \"0.0.96.1.1\", description: \"Zählernummer\", unit: '' },\n    { key: 'time', obis: \"1-0:0.9.1\", description: \"Uhrzeit\", unit: '' },\n    { key: 'date', obis: \"1-0:0.9.2\", description: \"Datum\", unit: '' },\n    { key: 'zaehlPIn', obis: \"1-0:1.8.0\", description: \"Aktueller Zählerstand P+\", unit: 'Wh' },\n    { key: 'zaehlPOut', obis: \"1-0:2.8.0\", description: \"Aktueller Zählerstand P-\", unit: 'Wh' },\n    { key: 'zaehlQIn', obis: \"1-0:3.8.0\", description: \"Aktueller Zählerstand Q+\", unit: 'varh' },\n    { key: 'zaehlQOut', obis: \"1-0:4.8.0\", description: \"Aktueller Zählerstand Q-\", unit: 'varh' },\n    { key: 'consPIn', obis: \"1-0:1.7.0\", description: \"Aktuelle Momentan Leistung P+\", unit: 'W' },\n    { key: 'consPOut', obis: \"1-0:2.7.0\", description: \"Aktuelle Momentan Leistung P-\", unit: 'W' },\n    { key: 'infoText', obis: \"0-0:96.13.0\", description: \"Kundeninformationstext\", unit: '' },\n    { key: 'infoCode', obis: \"0-0:96.13.1\", description: \"Kundeninformationscode\", unit: '' }\n];\n\n// ------------------ code ---------------------\nlet payload = toHexString(msg.payload);\nlet message = splitLvl1(payload);\nlet data = splitLvl2(message.data);\n\nlet original = {\n    config: {\n        key: key,\n        obisCodes: obisCodes\n    },\n    decrypt: {\n        systemTitle: message.systemTitle,\n        frameCounter: data.frameCounter,\n        securityByte: data.securityByte,\n        dataEnc: data.encrypted,\n    },\n    dataDecrypted: null,\n    debug: {\n        frameZero: new Date(Date.now() - hex2Dec(data.frameCounter) * secondsPerFrame * 1000),\n        completeMessage: payload,\n        message: message,\n        data: data\n    }\n};\n\nreturn {\n    original: original,\n    payload: 'python /config/node-red/python/dlmsDecrypt/main.py'\n        + ' -k ' + original.config.key\n        + ' -t ' + original.decrypt.systemTitle\n        + ' -b ' + original.decrypt.securityByte\n        + ' -f ' + original.decrypt.frameCounter\n        + ' -d ' + original.decrypt.dataEnc\n};\n\n\n// --------------------------------------\n\n/**\n * @param byteArray number[]\n * \n * @return string\n */\nfunction toHexString(byteArray) {\n    return Array.from(\n        byteArray,\n        function (byte) {\n            return ('0' + (byte & 0xFF).toString(16)).slice(-2);\n        }\n    ).join('');\n}\n\n/**\n *\n */\nfunction splitLvl1(message) {\n    let startByte = message.indexOf('db');\n    let titleLenStart = startByte + 2;\n\n    let titleStart = titleLenStart + 2;\n    let sysTitleLen = hex2Dec(message.slice(titleLenStart, titleStart));\n    let titleEnd = titleStart + sysTitleLen * 2;\n\n    let lengCountEnd = titleEnd + 2\n    let dataLength = hex2Dec(message.slice(titleEnd, lengCountEnd));\n    let endMessage = lengCountEnd + dataLength * 2;\n    let endChecksum = endMessage + 4;\n\n    return {\n        systemTitle: message.slice(titleStart, titleEnd),\n        data: message.slice(lengCountEnd, endMessage),\n        checksum: message.slice(endMessage, endChecksum)\n    };\n}\n\n/**\n *\n */\nfunction splitLvl2(message) {\n    let messageLength = message.length;\n\n    let frameCountStart = 2;\n    let frameCountEnd = frameCountStart + 8;\n    let tagStart = messageLength - 24;\n\n    return {\n        securityByte: message.slice(0, frameCountStart),\n        frameCounter: message.slice(frameCountStart, frameCountEnd),\n        encrypted: message.slice(frameCountEnd, messageLength),\n    };\n}\n\n/**\n *\n */\nfunction hex2Dec(n) {\n    return parseInt(n, 16);\n}\n",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 510,
+        "y": 200,
+        "wires": [
+            [
+                "13760a6276a161d4"
+            ]
+        ]
+    },
+    {
+        "id": "13760a6276a161d4",
+        "type": "exec",
+        "z": "d52ecd696b4150a3",
+        "command": "",
+        "addpay": "payload",
+        "append": "",
+        "useSpawn": "false",
+        "timer": "",
+        "winHide": false,
+        "oldrc": false,
+        "name": "",
+        "x": 670,
+        "y": 200,
+        "wires": [
+            [
+                "89cd97f35e056383"
+            ],
+            [],
+            []
+        ]
+    },
+    {
+        "id": "89cd97f35e056383",
+        "type": "function",
+        "z": "d52ecd696b4150a3",
+        "name": "restore original message",
+        "func": "\nif (msg.payload) {\n    // save decrypted data in original message\n    msg.original.dataDecrypted = msg.payload;\n    // restore orignial message\n    msg.payload = msg.original\n\n    return msg;\n}\n",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 850,
+        "y": 200,
+        "wires": [
+            [
+                "a88ab3350bea28e6"
+            ]
+        ]
+    },
+    {
+        "id": "7677903c803930a0",
+        "type": "function",
+        "z": "d52ecd696b4150a3",
+        "name": "filterShort",
+        "func": "if (msg.payload.length > 100) {\n    return msg;\n}\n",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 360,
+        "y": 200,
+        "wires": [
+            [
+                "b939a13416ab2353"
+            ]
+        ]
+    },
+    {
+        "id": "bdd0cc2fd379155d",
+        "type": "serial in",
+        "z": "d52ecd696b4150a3",
+        "name": "",
+        "serial": "6acf43d853173d38",
+        "x": 170,
+        "y": 200,
+        "wires": [
+            [
+                "7677903c803930a0"
+            ]
+        ]
+    },
+    {
+        "id": "6acf43d853173d38",
+        "type": "serial-port",
+        "serialport": "/dev/ttyUSB0",
+        "serialbaud": "115200",
+        "databits": "8",
+        "parity": "none",
+        "stopbits": "1",
+        "waitfor": "",
+        "dtr": "none",
+        "rts": "none",
+        "cts": "none",
+        "dsr": "none",
+        "newline": "500",
+        "bin": "bin",
+        "out": "time",
+        "addchar": "",
+        "responsetimeout": "10000"
+    }
 ]
