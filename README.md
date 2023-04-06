@@ -17,4 +17,4 @@ Teilt die Nachricht in die einzelnen Teile auf: FrameCounter, systemTitle, Encry
 Um die Nachricht zu entschlüsseln gehe ich momentan den Umweg über Python welches die Lib aus https://github.com/Gurux/Gurux.DLMS.Python verwendet
 
 ### split Decrypted
-Teilt die entschlüsselten Daten auf, derzeit hardcodierte Längen passend für die Kärntner Smartmeter
+Teilt die entschlüsselten Daten auf, und ordnet sie in Objekte. In kärnten wird momentan variante1 aus dem [Dokument](https://oesterreichsenergie.at/fileadmin/user_upload/Smart_Meter-Plattform/20200201_Konzept_Kundenschnittstelle_SM.pdf) verwendet
